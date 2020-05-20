@@ -247,8 +247,6 @@ func trigger(actions map[string]func(*session, string, []string), atoms []string
 
 	if v, ok := actions[atoms[4]]; ok {
 		v(s, atoms[3], atoms[6:])
-	} else {
-		log.Fatalf("invalid phase: %s", atoms[4])
 	}
 }
 
