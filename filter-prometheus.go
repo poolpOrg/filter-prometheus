@@ -26,8 +26,8 @@ import (
 	"net/http"
 )
 
-var register_smtp_in bool = false
-var register_smtp_out bool = false
+var registerSMTPIn bool = false
+var registerSMTPOut bool = false
 
 type session struct {
 	id string
@@ -223,10 +223,10 @@ func txRollback(s *session, subsystem string, params []string) {
 }
 
 func filterInit() {
-	if register_smtp_in {
+	if registerSMTPIn {
 		fmt.Printf("register|report|smtp-in|*\n")
 	}
-	if register_smtp_out {
+	if registerSMTPOut {
 		fmt.Printf("register|report|smtp-out|*\n")
 	}
 	fmt.Println("register|ready")
@@ -257,10 +257,10 @@ func skipConfig(scanner *bufio.Scanner) {
 		}
 		line := scanner.Text()
 		if line == "config|subsystem|smtp-in" {
-			register_smtp_in = true
+			registerSMTPIn = true
 		}
 		if line == "config|subsystem|smtp-out" {
-			register_smtp_out = true
+			registerSMTPOut = true
 		}
 		if line == "config|ready" {
 			return
