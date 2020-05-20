@@ -1,6 +1,6 @@
 # filter-prometheus
 
-THIS IS A WORK IN PROGRESS, USE WITH CAUTION AS CHANGES HAPPEN FREQUENTLY.
+**THIS IS A WORK IN PROGRESS, USE WITH CAUTION AS CHANGES HAPPEN FREQUENTLY.**
 
 ## Description
 This filter implements a Prometheus exporter to expose OpenSMTPD metrics.
