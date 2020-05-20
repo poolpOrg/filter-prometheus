@@ -18,6 +18,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	"net/http"
 )
 
+var exporter *string
 var registerSMTPIn bool = false
 var registerSMTPOut bool = false
 
@@ -363,6 +365,8 @@ func metricsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	exporter = flag.String("exporter", "localhost:13742", "exporter host and port")
+	flag.Parse()
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -372,7 +376,7 @@ func main() {
 
 	go func() {
 		http.HandleFunc("/metrics", metricsHandler)
-		log.Fatal(http.ListenAndServe(":31333", nil))
+		log.Fatal(http.ListenAndServe(*exporter, nil))
 	}()
 
 	for {

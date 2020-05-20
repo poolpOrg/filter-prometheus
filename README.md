@@ -28,3 +28,23 @@ $ doas install -m 0555 filter-prometheus /usr/local/libexec/smtpd/filter-prometh
 ## How to configure
 The filter itself requires no configuration.
 
+It must be declared in smtpd.conf and attached to a listener or relay action:
+```
+filter "prometheus" proc-exec "filter-prometheus"
+
+listen on all filter "prometheus"
+
+action "foobar" relay filter "prometheus"
+```
+
+The exporter will listen on `localhost:13742` by default.
+
+The filter supports an `-exporter` parameter to provide an alternate interface:
+
+```
+filter "prometheus" proc-exec "filter-prometheus -exporter 192.168.1.27:43434"
+
+listen on all filter "prometheus"
+
+action "foobar" relay filter "prometheus"
+```
