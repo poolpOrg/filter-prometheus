@@ -244,7 +244,7 @@ func trigger(actions map[string]func(*session, string, []string), atoms []string
 
 	s, ok := sessions[atoms[5]]
 	if !ok {
-		log.Fatalf("invalid session ID: %s", atoms[5])
+		return
 	}
 
 	if v, ok := actions[atoms[4]]; ok {
