@@ -26,6 +26,9 @@ import (
 	"net/http"
 )
 
+var register_smtp_in bool = false
+var register_smtp_out bool = false
+
 type session struct {
 	id string
 
@@ -220,8 +223,11 @@ func txRollback(s *session, subsystem string, params []string) {
 }
 
 func filterInit() {
-	for k := range reporters {
-		fmt.Printf("register|report|smtp-in|%s\n", k)
+	if register_smtp_in {
+		fmt.Printf("register|report|smtp-in|*\n")
+	}
+	if register_smtp_out {
+		fmt.Printf("register|report|smtp-out|*\n")
 	}
 	fmt.Println("register|ready")
 }
@@ -252,99 +258,104 @@ func skipConfig(scanner *bufio.Scanner) {
 			os.Exit(0)
 		}
 		line := scanner.Text()
+		if line == "config|subsystem|smtp-in" {
+			register_smtp_in = true
+		}
+		if line == "config|subsystem|smtp-out" {
+			register_smtp_out = true
+		}
 		if line == "config|ready" {
 			return
 		}
 	}
 }
 
-func smtpMetricsHandlers(subsystem string, w http.ResponseWriter, r *http.Request) {
-	m := getMetrics(subsystem)
-	namespace := strings.Replace(subsystem, "-", "_", 1)
+func smtpMetricsHandlers(direction string, w http.ResponseWriter, r *http.Request) {
+	m := getMetrics(direction)
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_active The number of active smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_active counter\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_active %d\n", namespace, m.sessionsActive)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_active The number of active smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_active counter\n")
+	fmt.Fprintf(w, "smtpd_sessions_active{direction=\"%s\"} %d\n", direction, m.sessionsActive)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_total The number of active smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_total gauge\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_total %d\n", namespace, m.sessionsTotal)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_total The number of active smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_total gauge\n")
+	fmt.Fprintf(w, "smtpd_sessions_total{direction=\"%s\"} %d\n", direction, m.sessionsTotal)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_inet4_active The number of active inet4 smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_inet4_active counter\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_inet4_active %d\n", namespace, m.sessionsInet4Active)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_inet4_active The number of active inet4 smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_inet4_active counter\n")
+	fmt.Fprintf(w, "smtpd_sessions_inet4_active{direction=\"%s\"} %d\n", direction, m.sessionsInet4Active)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_inet4_total The number of active inet4 smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_inet4_total gauge\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_inet4_total %d\n", namespace, m.sessionsInet4Total)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_inet4_total The number of active inet4 smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_inet4_total gauge\n")
+	fmt.Fprintf(w, "smtpd_sessions_inet4_total{direction=\"%s\"} %d\n", direction, m.sessionsInet4Total)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_inet6_active The number of active inet6 smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_inet6_active counter\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_inet6_active %d\n", namespace, m.sessionsInet6Active)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_inet6_active The number of active inet6 smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_inet6_active counter\n")
+	fmt.Fprintf(w, "smtpd_sessions_inet6_active{direction=\"%s\"} %d\n", direction, m.sessionsInet6Active)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_inet6_total The number of active inet6 smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_inet6_total gauge\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_inet6_total %d\n", namespace, m.sessionsInet6Total)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_inet6_total The number of active inet6 smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_inet6_total gauge\n")
+	fmt.Fprintf(w, "smtpd_sessions_inet6_total{direction=\"%s\"} %d\n", direction, m.sessionsInet6Total)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_unix_active The number of active unix smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_unix_active counter\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_unix_active %d\n", namespace, m.sessionsUnixActive)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_unix_active The number of active unix smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_unix_active counter\n")
+	fmt.Fprintf(w, "smtpd_sessions_unix_active{direction=\"%s\"} %d\n", direction, m.sessionsUnixActive)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_unix_total The number of active unix smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_unix_total gauge\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_unix_total %d\n", namespace, m.sessionsUnixTotal)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_unix_total The number of active unix smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_unix_total gauge\n")
+	fmt.Fprintf(w, "smtpd_sessions_unix_total{direction=\"%s\"} %d\n", direction, m.sessionsUnixTotal)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_tls_active The number of active TLS smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_tls_active counter\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_tls_active %d\n", namespace, m.sessionsTLSActive)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_tls_active The number of active TLS smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_tls_active counter\n")
+	fmt.Fprintf(w, "smtpd_sessions_tls_active{direction=\"%s\"} %d\n", direction, m.sessionsTLSActive)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_tls_total The number of active unix smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_tls_total gauge\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_tls_total %d\n", namespace, m.sessionsTLSTotal)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_tls_total The number of active unix smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_tls_total gauge\n")
+	fmt.Fprintf(w, "smtpd_sessions_tls_total{direction=\"%s\"} %d\n", direction, m.sessionsTLSTotal)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_auth_active The number of active unix smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_auth_active counter\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_auth_active %d\n", namespace, m.sessionsAuthActive)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_auth_active The number of active unix smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_auth_active counter\n")
+	fmt.Fprintf(w, "smtpd_sessions_auth_active{direction=\"%s\"} %d\n", direction, m.sessionsAuthActive)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_auth_total The number of active unix smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_auth_total gauge\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_auth_total %d\n", namespace, m.sessionsAuthTotal)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_auth_total The number of active unix smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_auth_total gauge\n")
+	fmt.Fprintf(w, "smtpd_sessions_auth_total{direction=\"%s\"} %d\n", direction, m.sessionsAuthTotal)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_sessions_auth_failures The number of active unix smtp-in sessions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_sessions_auth_failures gauge\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_sessions_auth_failures %d\n", namespace, m.sessionsAuthFailures)
+	fmt.Fprintf(w, "# HELP smtpd_sessions_auth_failures The number of active unix smtp-in sessions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_sessions_auth_failures gauge\n")
+	fmt.Fprintf(w, "smtpd_sessions_auth_failures{direction=\"%s\"} %d\n", direction, m.sessionsAuthFailures)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_tx_active The number of active smtp-in transactions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_tx_active counter\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_tx_active %d\n", namespace, m.txActive)
+	fmt.Fprintf(w, "# HELP smtpd_tx_active The number of active smtp-in transactions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_tx_active counter\n")
+	fmt.Fprintf(w, "smtpd_tx_active{direction=\"%s\"} %d\n", direction, m.txActive)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_tx_total The number of total smtp-in transactions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_tx_total gauge\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_tx_total %d\n", namespace, m.txTotal)
+	fmt.Fprintf(w, "# HELP smtpd_tx_total The number of total smtp-in transactions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_tx_total gauge\n")
+	fmt.Fprintf(w, "smtpd_tx_total{direction=\"%s\"} %d\n", direction, m.txTotal)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_tx_commit_total The number of total committed smtp-in transactions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_tx_commit_total gauge\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_tx_commit_total %d\n", namespace, m.txCommitTotal)
+	fmt.Fprintf(w, "# HELP smtpd_tx_commit_total The number of total committed smtp-in transactions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_tx_commit_total gauge\n")
+	fmt.Fprintf(w, "smtpd_tx_commit_total{direction=\"%s\"} %d\n", direction, m.txCommitTotal)
 	fmt.Fprintf(w, "\n")
 
-	fmt.Fprintf(w, "# HELP smtpd_%s_tx_rollback_total The number of total rollbacked smtp-in transactions.\n", namespace)
-	fmt.Fprintf(w, "# TYPE smtpd_%s_tx_tollback_total gauge\n", namespace)
-	fmt.Fprintf(w, "smtpd_%s_tx_rollback_total %d\n", namespace, m.txRollbackTotal)
+	fmt.Fprintf(w, "# HELP smtpd_tx_rollback_total The number of total rollbacked smtp-in transactions.\n")
+	fmt.Fprintf(w, "# TYPE smtpd_tx_tollback_total gauge\n")
+	fmt.Fprintf(w, "smtpd_tx_rollback_total{direction=\"%s\"} %d\n", direction, m.txRollbackTotal)
 	fmt.Fprintf(w, "\n")
 }
 
