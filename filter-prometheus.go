@@ -138,6 +138,8 @@ func linkDisconnect(s *session, subsystem string, params []string) {
 		m.sessionsTLSActive--
 	}
 
+	m.sessionsActive--
+
 	delete(sessions, s.id)
 }
 
